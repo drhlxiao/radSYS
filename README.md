@@ -1,2 +1,0 @@
-# radSYS
-radiation analysis software
