@@ -200,7 +200,7 @@ class Editor(CodeEditor,ComponentMixin):
             self.import_cad_to_scene(fname)
 
     def to_shape(self,step_objects):
-        return {f'Part_{k}':SimpleNamespace(shape=v,options={'alpha':0.8}) for k,v in enumerate(step_objects) }
+        return {f'Part_{k}':SimpleNamespace(shape=v,options={'alpha':0.2}) for k,v in enumerate(step_objects) }
     def import_cad_to_scene(self, fname):
         #passss
         #code=f'''result=cq.importers.importStep("{fname}")\nshow_object(result)'''
