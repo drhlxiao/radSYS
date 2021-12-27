@@ -8,6 +8,9 @@ from PyQt5.QtWidgets import QAction, QFileDialog
 from PyQt5.QtGui import QFontDatabase
 from path import Path
 from ..cq_utils import make_AIS, export, to_occ_color, is_obj_empty, get_occ_color
+from ..step_reader import read as step_read
+from ..cq_utils import find_cq_objects, reload_cq
+from types import SimpleNamespace
 
 import sys
 
@@ -188,6 +191,7 @@ class Editor(CodeEditor,ComponentMixin):
 
         else:
             self.save_as()
+    #added by Hualin 2021-12-27
     def import_cad(self):
         if not self.confirm_discard(): return
         curr_dir = Path(self.filename).abspath().dirname()
@@ -195,26 +199,15 @@ class Editor(CodeEditor,ComponentMixin):
         if fname != '':
             self.import_cad_to_scene(fname)
 
+    def to_shape(self,step_objects):
+        return {f'Part_{k}':SimpleNamespace(shape=v,options={'alpha':0.8}) for k,v in enumerate(step_objects) }
     def import_cad_to_scene(self, fname):
         #passss
         #code=f'''result=cq.importers.importStep("{fname}")\nshow_object(result)'''
         #self.executeScript.emit(code)
-        result=cq.importers.importStep(fname)
-        objects_f={}
-        i=0
-        for v in result.val():
-            try:
-                if not is_obj_empty(v.shape):
-                    k=v.label
-                    if not k:
-                        k=f'part_{i}'
-                        i+=1
-                    objects_f[k]=v
-                    print('adding',k)
-            except Exception as e:
-                print(e)
-                pass
+        result=step_read(fname) 
         
+        objects_f=self.to_shape(result)
 
         self.addObjectsToScene.emit(objects_f)
         

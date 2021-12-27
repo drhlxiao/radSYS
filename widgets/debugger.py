@@ -189,6 +189,7 @@ class Debugger(QObject,ComponentMixin):
             if self.preferences['Reload imported modules']:
                 stack.enter_context(module_manager())
 
+            #print(locals_dict, globals_dict)
             exec(code, locals_dict, globals_dict)     
 
     def _inject_locals(self,module):
