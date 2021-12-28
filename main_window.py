@@ -220,6 +220,8 @@ class MainWindow(QMainWindow,MainMixin):
             connect(self.components['viewer'].update_item)
         self.components['object_tree'].sigObjectsRemoved\
             .connect(self.components['viewer'].remove_items)
+
+
         self.components['object_tree'].sigCQObjectSelected\
             .connect(self.components['cq_object_inspector'].setObject)
         self.components['object_tree'].sigObjectPropertiesChanged\
@@ -237,6 +239,8 @@ class MainWindow(QMainWindow,MainMixin):
             .connect(self.components['viewer'].display_many)
         self.components['cq_object_inspector'].sigRemoveObjects\
             .connect(self.components['viewer'].remove_items)
+
+
         self.components['cq_object_inspector'].sigShowPlane\
             .connect(self.components['viewer'].toggle_grid)
         self.components['cq_object_inspector'].sigShowPlane[bool,float]\
@@ -335,7 +339,7 @@ class MainWindow(QMainWindow,MainMixin):
     def handle_filename_change(self, fname):
 
         new_title = fname if fname else "*"
-        self.setWindowTitle(f"{self.name}: {new_title}")
+        self.setWindowTitle(f"{self.name}")
 
 if __name__ == "__main__":
 

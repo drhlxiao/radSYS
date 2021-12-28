@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QAction, QFileDialog
 from PyQt5.QtGui import QFontDatabase
 from path import Path
 from ..cq_utils import make_AIS, export, to_occ_color, is_obj_empty, get_occ_color
-from ..step_reader import read as step_read
+from ..step_reader import read_step
 from ..cq_utils import find_cq_objects, reload_cq
 from types import SimpleNamespace
 
@@ -200,12 +200,22 @@ class Editor(CodeEditor,ComponentMixin):
             self.import_cad_to_scene(fname)
 
     def to_shape(self,step_objects):
-        return {f'Part_{k}':SimpleNamespace(shape=v,options={'alpha':0.2}) for k,v in enumerate(step_objects) }
+        results={}
+        unamed_i=0
+        
+        for o in step_objects:
+            #c=o['RGB']
+            #print(c)
+            label=o['Name']
+            if not label:
+                label=f'Unamed_{unamed_i}'
+            results[label]=SimpleNamespace(shape=o['CQ_OCP_TopDS'],options={'alpha':0.2})
+        return results
     def import_cad_to_scene(self, fname):
         #passss
         #code=f'''result=cq.importers.importStep("{fname}")\nshow_object(result)'''
         #self.executeScript.emit(code)
-        result=step_read(fname) 
+        result=read_step(fname) 
         
         objects_f=self.to_shape(result)
 

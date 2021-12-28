@@ -23,7 +23,10 @@ class ObjectTreeItem(QTreeWidgetItem):
     props = [{'name': 'Name', 'type': 'str', 'value': ''},
              {'name': 'Color', 'type': 'color', 'value': "f4a824"},
              {'name': 'Alpha', 'type': 'float', 'value': 0, 'limits': (0,1), 'step': 1e-1},
-             {'name': 'Visible', 'type': 'bool','value': True}]
+             {'name': 'Visible', 'type': 'bool','value': True},
+             {'name': 'Material', 'type': 'str','value': 'Aluminum'},
+             {'name': 'Tolerance', 'type': 'float', 'value': 1e-2, 'limits': (0,1e3), 'step': 1e-5},
+             ]
 
     def __init__(self,
                  name,
@@ -71,7 +74,7 @@ class CQRootItem(TopTreeItem):
 
     def __init__(self,*args,**kwargs):
 
-        super(CQRootItem,self).__init__(['CQ models'],*args,**kwargs)
+        super(CQRootItem,self).__init__(['Models'],*args,**kwargs)
 
 
 class HelpersRootItem(TopTreeItem):
@@ -93,6 +96,7 @@ class ObjectTree(QWidget,ComponentMixin):
 
     sigObjectsAdded = pyqtSignal([list],[list,bool])
     sigObjectsRemoved = pyqtSignal(list)
+    #csigObjectsHidden= pyqtSignal(list)
     sigCQObjectSelected = pyqtSignal(object)
     sigAISObjectsSelected = pyqtSignal(list)
     sigItemChanged = pyqtSignal(QTreeWidgetItem,int)
@@ -147,9 +151,16 @@ class ObjectTree(QWidget,ComponentMixin):
                                              enabled=False,
                                              triggered=self.removeSelected)
 
+        self._hide_others_action = QAction('Hide others',
+                                             self,
+                                             enabled=False,
+                                             triggered=self.hideOthers)
+
         self._toolbar_actions = \
             [QAction(icon('delete-many'),'Clear all',self,triggered=self.removeObjects),
-             self._clear_current_action,]
+             self._clear_current_action,
+             self._hide_others_action,
+             ]
 
         self.prepareMenu()
 
@@ -248,8 +259,6 @@ class ObjectTree(QWidget,ComponentMixin):
         objects_f = {k:v for k,v in objects.items() if not is_obj_empty(v.shape)}
 
         for name,obj in objects_f.items():
-            print('adding objects', name)
-            print(type(obj))
             ais,shape_display = make_AIS(obj.shape,obj.options)
             
             child = ObjectTreeItem(name,
@@ -289,13 +298,25 @@ class ObjectTree(QWidget,ComponentMixin):
     @pyqtSlot(list)
     @pyqtSlot()
     def removeObjects(self,objects=None):
-
         if objects:
             removed_items_ais = [self.CQ.takeChild(i).ais for i in objects]
         else:
             removed_items_ais = [ch.ais for ch in self.CQ.takeChildren()]
 
         self.sigObjectsRemoved.emit(removed_items_ais)
+
+    
+    @pyqtSlot()
+    def hideOthers(self):
+        root = self.tree.invisibleRootItem()
+        selected_indexes=self.tree.selectedIndexes()
+        child_count = root.childCount()
+        for i in range(child_count):
+            item = self.CQ.takeChild(i)
+            item.properties['Visible'] = i in selected_indexes
+
+
+    
 
     @pyqtSlot(bool)
     def stashObjects(self,action : bool):
@@ -315,8 +336,11 @@ class ObjectTree(QWidget,ComponentMixin):
 
         ixs = self.tree.selectedIndexes()
         rows = [ix.row() for ix in ixs]
-
         self.removeObjects(rows)
+
+
+
+
 
     def export(self,export_type,precision=None):
 
@@ -353,6 +377,7 @@ class ObjectTree(QWidget,ComponentMixin):
             self._export_STL_action.setEnabled(True)
             self._export_STEP_action.setEnabled(True)
             self._clear_current_action.setEnabled(True)
+            self._hide_others_action.setEnabled(True)
             self.sigCQObjectSelected.emit(item.shape)
             self.properties_editor.setParameters(item.properties,
                                                  showTop=False)
@@ -363,6 +388,7 @@ class ObjectTree(QWidget,ComponentMixin):
         else:
             self._export_STL_action.setEnabled(False)
             self._export_STEP_action.setEnabled(False)
+            self._hide_others_action.setEnabled(False)
             self._clear_current_action.setEnabled(False)
             self.properties_editor.setEnabled(False)
             self.properties_editor.clear()

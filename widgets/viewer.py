@@ -192,9 +192,11 @@ class OCCViewer(QWidget,ComponentMixin):
 
     @pyqtSlot(list)
     def remove_items(self,ais_items):
-
         ctx = self._get_context()
         for ais in ais_items: ctx.Erase(ais,True)
+
+
+
 
     @pyqtSlot()
     def redraw(self):
