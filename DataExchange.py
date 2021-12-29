@@ -14,40 +14,41 @@
 ##
 ##You should have received a copy of the GNU Lesser General Public License
 ##along with pythonOCC.  If not, see <http://www.gnu.org/licenses/>.
+#https://github.com/tpaviot/pythonocc-core/tree/master/src/Extend
 
 import os
 
-from OCC.Core.TopoDS import TopoDS_Shape
-from OCC.Core.TopAbs import TopAbs_SOLID, TopAbs_SHELL, TopAbs_COMPOUND
-from OCC.Core.BRepMesh import BRepMesh_IncrementalMesh
-from OCC.Core.StlAPI import stlapi_Read, StlAPI_Writer
-from OCC.Core.BRep import BRep_Builder
-from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Pnt2d
-from OCC.Core.Bnd import Bnd_Box2d
-from OCC.Core.TopoDS import TopoDS_Compound
-from OCC.Core.IGESControl import (
+from OCP.TopoDS import TopoDS_Shape
+from OCP.TopAbs import TopAbs_SOLID, TopAbs_SHELL, TopAbs_COMPOUND
+from OCP.BRepMesh import BRepMesh_IncrementalMesh
+from OCP.StlAPI import stlapi_Read, StlAPI_Writer
+from OCP.BRep import BRep_Builder
+from OCP.gp import gp_Pnt, gp_Dir, gp_Pnt2d
+from OCP.Bnd import Bnd_Box2d
+from OCP.TopoDS import TopoDS_Compound
+from OCP.IGESControl import (
     IGESControl_Controller,
     IGESControl_Reader,
     IGESControl_Writer,
 )
-from OCC.Core.STEPControl import (
+from OCP.STEPControl import (
     STEPControl_Reader,
     STEPControl_Writer,
     STEPControl_AsIs,
 )
-from OCC.Core.Interface import Interface_Static_SetCVal
-from OCC.Core.IFSelect import IFSelect_RetDone, IFSelect_ItemsByEntity
-from OCC.Core.TDocStd import TDocStd_Document
-from OCC.Core.XCAFDoc import (
+from OCP.Interface import Interface_Static_SetCVal
+from OCP.IFSelect import IFSelect_RetDone, IFSelect_ItemsByEntity
+from OCP.TDocStd import TDocStd_Document
+from OCP.XCAFDoc import (
     XCAFDoc_DocumentTool_ShapeTool,
     XCAFDoc_DocumentTool_ColorTool,
 )
-from OCC.Core.STEPCAFControl import STEPCAFControl_Reader
-from OCC.Core.TDF import TDF_LabelSequence, TDF_Label
-from OCC.Core.TCollection import TCollection_ExtendedString
-from OCC.Core.Quantity import Quantity_Color, Quantity_TOC_RGB
-from OCC.Core.TopLoc import TopLoc_Location
-from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_Transform
+from OCP.STEPCAFControl import STEPCAFControl_Reader
+from OCP.TDF import TDF_LabelSequence, TDF_Label
+from OCP.TCollection import TCollection_ExtendedString
+from OCP.Quantity import Quantity_Color, Quantity_TOC_RGB
+from OCP.TopLoc import TopLoc_Location
+from OCP.BRepBuilderAPI import BRepBuilderAPI_Transform
 
 from OCC.Extend.TopologyUtils import (
     discretize_edge,

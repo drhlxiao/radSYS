@@ -5,7 +5,7 @@ from modulefinder import ModuleFinder
 from spyder.plugins.editor.widgets.codeeditor import CodeEditor
 from PyQt5.QtCore import pyqtSignal, QFileSystemWatcher, QTimer
 from PyQt5.QtWidgets import QAction, QFileDialog
-from PyQt5.QtGui import QFontDatabase
+from PyQt5.QtGui import QFontDatabase, QColor
 from path import Path
 from ..cq_utils import make_AIS, export, to_occ_color, is_obj_empty, get_occ_color
 from ..step_reader import read_step
@@ -204,12 +204,13 @@ class Editor(CodeEditor,ComponentMixin):
         unamed_i=0
         
         for o in step_objects:
-            #c=o['RGB']
+            c=o['RGB']
+            color=QColor.fromRgbF(c[0],c[1],c[2],0.2)
             #print(c)
             label=o['Name']
             if not label:
                 label=f'Unamed_{unamed_i}'
-            results[label]=SimpleNamespace(shape=o['CQ_OCP_TopDS'],options={'alpha':0.2})
+            results[label]=SimpleNamespace(shape=o['CQ_OCP_TopDS'],options={'alpha':0.2})#,'color':color})
         return results
     def import_cad_to_scene(self, fname):
         #passss

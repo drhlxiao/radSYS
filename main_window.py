@@ -1,23 +1,22 @@
 import sys
 
-from PyQt5.QtWidgets import (QLabel, QMainWindow, QToolBar, QDockWidget, QAction)
-
 import cadquery as cq
-
-from .widgets.editor import Editor
-from .widgets.viewer import OCCViewer
-from .widgets.console import ConsoleWidget
-from .widgets.object_tree import ObjectTree
-from .widgets.traceback_viewer import TracebackPane
-from .widgets.debugger import Debugger, LocalsView
-from .widgets.cq_object_inspector import CQObjectInspector
-from .widgets.log import LogViewer
+from PyQt5.QtWidgets import QAction, QDockWidget, QLabel, QMainWindow, QToolBar
 
 from . import __version__
-from .utils import dock, add_actions, open_url, about_dialog, check_gtihub_for_updates, confirm
-from .mixins import MainMixin
 from .icons import icon
+from .mixins import MainMixin
 from .preferences import PreferencesWidget
+from .utils import (about_dialog, add_actions, check_gtihub_for_updates,
+                    confirm, dock, open_url)
+from .widgets.console import ConsoleWidget
+from .widgets.cq_object_inspector import CQObjectInspector
+from .widgets.debugger import Debugger, LocalsView
+from .widgets.editor import Editor
+from .widgets.log import LogViewer
+from .widgets.object_tree import ObjectTree
+from .widgets.traceback_viewer import TracebackPane
+from .widgets.viewer import OCCViewer
 
 
 class MainWindow(QMainWindow,MainMixin):
@@ -290,8 +289,8 @@ class MainWindow(QMainWindow,MainMixin):
 
     def setup_logging(self):
 
-        from logbook.compat import redirect_logging
         from logbook import INFO, Logger
+        from logbook.compat import redirect_logging
 
         redirect_logging()
         self.components['log'].handler.level = INFO

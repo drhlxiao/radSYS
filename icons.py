@@ -9,11 +9,15 @@ Created on Fri May 25 14:47:10 2018
 from PyQt5.QtGui import QIcon
 
 from . import icons_res
+import qtawesome as qta
+from PyQt5.QtGui import  QColor
+
+_app_icon_color=QColor.fromRgbF(1,0,0,0.5)
 _icons = {
-    'app' : QIcon(":/images/icons/cadquery_logo_dark.svg")
+    #'app' : QIcon(":/images/icons/cadquery_logo_dark.svg")
+    'app' : qta.icon('mdi6.atom-variant', color=_app_icon_color)
     }
 
-import qtawesome as qta
 
 _icons_specs = {
     'new'  : (('fa.file-o',),{}),
