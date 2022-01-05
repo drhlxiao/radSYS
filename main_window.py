@@ -10,6 +10,7 @@ from .preferences import PreferencesWidget
 from .utils import (about_dialog, add_actions, check_gtihub_for_updates,
                     confirm, dock, open_url)
 from .widgets.console import ConsoleWidget
+from .widgets.figviewer import FigViewer
 from .widgets.cq_object_inspector import CQObjectInspector
 from .widgets.debugger import Debugger, LocalsView
 from .widgets.editor import Editor
@@ -84,7 +85,7 @@ class MainWindow(QMainWindow,MainMixin):
         self.registerComponent('object_tree',
                                ObjectTree(self),
                                lambda c: dock(c,
-                                              'Objects',
+                                              'Mass model',
                                               self,
                                               defaultArea='right'))
 
@@ -94,6 +95,15 @@ class MainWindow(QMainWindow,MainMixin):
                                               'Console',
                                               self,
                                               defaultArea='bottom'))
+        self.registerComponent('figviewer',
+                               FigViewer(self),
+                               lambda c: dock(c,
+                                              'Figures',
+                                              self,
+                                              defaultArea='right'))
+
+
+
 
         self.registerComponent('traceback_viewer',
                                TracebackPane(self),
@@ -178,7 +188,7 @@ class MainWindow(QMainWindow,MainMixin):
                     self,triggered=self.about))
         
         menu_help.addAction( \
-            QAction('Check for CadQuery updates',
+            QAction('Check for RadSYS updates',
                     self,triggered=self.check_for_cq_updates))
 
     def prepare_menubar_component(self,menus,comp_menu_dict):
@@ -201,11 +211,14 @@ class MainWindow(QMainWindow,MainMixin):
         self.statusBar().insertPermanentWidget(0, self.status_label)
 
     def prepare_actions(self):
+        self.components['editor'].set_figview_handle(self.components['figviewer'])
+        #allow editor update figure
 
         self.components['debugger'].sigRendered\
             .connect(self.components['object_tree'].addObjects)
         self.components['debugger'].sigTraceback\
             .connect(self.components['traceback_viewer'].addTraceback)
+
         self.components['debugger'].sigLocals\
             .connect(self.components['variables_viewer'].update_frame)
         self.components['debugger'].sigLocals\
@@ -319,8 +332,8 @@ class MainWindow(QMainWindow,MainMixin):
 
         about_dialog(
             self,
-            f'About CQ-editor',
-            f'PyQt GUI for CadQuery.\nVersion: {__version__}.\nSource Code: https://github.com/CadQuery/CQ-editor',
+            f'About RadSYS',
+            f'RadSYS.\nVersion: {__version__}.\nSource Code: https://github.com/drhlxiao/RadSYS',
         )
         
     def check_for_cq_updates(self):
@@ -328,12 +341,11 @@ class MainWindow(QMainWindow,MainMixin):
         check_gtihub_for_updates(self,cq)
 
     def documentation(self):
-
-        open_url('https://github.com/CadQuery')
+        open_url('https://github.com/drhlxiao/radsys')
 
     def cq_documentation(self):
-
-        open_url('https://cadquery.readthedocs.io/en/latest/')
+        pass
+       # open_url('https://radsys.readthedocs.io/en/latest/')
 
     def handle_filename_change(self, fname):
 

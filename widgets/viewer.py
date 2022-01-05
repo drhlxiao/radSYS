@@ -77,6 +77,7 @@ class OCCViewer(QWidget,ComponentMixin):
         ctx = self.canvas.context
         ctx.SetDeviationCoefficient(self.preferences['Deviation'])
         ctx.SetDeviationAngle(self.preferences['Angular deviation'])
+        #self.show_grid()
 
     def create_actions(self,parent):
 
@@ -137,7 +138,6 @@ class OCCViewer(QWidget,ComponentMixin):
                                    triggered=self.save_screenshot)]}
 
     def toolbarActions(self):
-
         return self._actions['View']
 
 
@@ -176,10 +176,10 @@ class OCCViewer(QWidget,ComponentMixin):
         for ais in ais_list:
             context.Display(ais,True)
 
-        if self.preferences['Fit automatically'] and fit is None:
-            self.fit()
-        elif fit:
-            self.fit()
+        #if self.preferences['Fit automatically'] and fit is None:
+        self.fit()
+        #elif fit:
+        #    self.fit()
 
     @pyqtSlot(QTreeWidgetItem,int)
     def update_item(self,item,col):

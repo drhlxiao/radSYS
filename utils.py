@@ -78,7 +78,8 @@ def dock(widget,
     return dock
 
 def add_actions(menu,actions):
-    
+    if not actions:
+        return
     if len(actions) > 0:
         menu.addActions(actions)
         menu.addSeparator()
@@ -91,6 +92,12 @@ def about_dialog(parent,title,text):
     
     QtWidgets.QMessageBox.about(parent,title,text)
     
+def get_save_directory(msg=None):
+    return QFileDialog.getExistingDirectory( 'Select Folder' if msg is None else msg)
+def get_open_directory(msg=None):
+    return QFileDialog.getExistingDirectory( 'Select Folder')
+
+
 def get_save_filename(suffix):
     
     rv,_ = QFileDialog.getSaveFileName(filter='*.{}'.format(suffix))
@@ -99,9 +106,18 @@ def get_save_filename(suffix):
     return rv
 
 def get_open_filename(suffix, curr_dir):
-    filters='*.{}'.format(suffix)
+    if isinstance(suffix, list):
+        filters=[]
+        for suf in suffix:
+            filters.append(f'{suf} (*.{suf})')
+        filters=';;'.join(filters)
+
+    else:
+        filters='*.{}'.format(suffix)
+
     rv,_ = QFileDialog.getOpenFileName(directory=curr_dir, filter=filters)
-    if rv != '' and not rv.endswith(suffix): rv += '.'+suffix
+
+    #if rv != '' and not rv.endswith(suffix): rv += '.'+suffix
     
     return rv
 

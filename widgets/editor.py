@@ -1,6 +1,7 @@
 import os
 import cadquery as cq
 from modulefinder import ModuleFinder
+import numpy as np
 
 from spyder.plugins.editor.widgets.codeeditor import CodeEditor
 from PyQt5.QtCore import pyqtSignal, QFileSystemWatcher, QTimer
@@ -8,7 +9,7 @@ from PyQt5.QtWidgets import QAction, QFileDialog
 from PyQt5.QtGui import QFontDatabase, QColor
 from path import Path
 from ..cq_utils import make_AIS, export, to_occ_color, is_obj_empty, get_occ_color
-from ..step_reader import read_step
+from ..occ.step_reader import read_step
 from ..cq_utils import find_cq_objects, reload_cq
 from types import SimpleNamespace
 
@@ -17,9 +18,23 @@ import sys
 from pyqtgraph.parametertree import Parameter
 
 from ..mixins import ComponentMixin
-from ..utils import get_save_filename, get_open_filename, confirm
+from ..utils import get_save_filename, get_open_filename, confirm, get_open_directory
 
 from ..icons import icon
+
+def get_track_color(charge):
+    charge=float(charge)
+    if charge<0:
+        return (1,0,0)
+    if charge==0:
+        return (0,1,0)
+    if charge>0:
+        return (0,0,1)
+def get_range(x, nstd=1, margin=None):
+    m=np.mean(x)
+    if margin is None:
+        margin=nstd*np.std(x)
+    return [m-margin, m+margin]
 
 class Editor(CodeEditor,ComponentMixin):
 
@@ -38,11 +53,12 @@ class Editor(CodeEditor,ComponentMixin):
         {'name': 'Autoreload delay', 'type': 'int', 'value': 50},
         {'name': 'Autoreload: watch imported modules', 'type': 'bool', 'value': False},
         {'name': 'Line wrap', 'type': 'bool', 'value': False},
+        {'name': 'Max Tracks', 'type': 'int', 'value': 100},
         {'name': 'Color scheme', 'type': 'list',
          'values': ['Spyder','Monokai','Zenburn'], 'value': 'Spyder'}])
 
     EXTENSIONS = 'py'
-    CAD_FILE_EXTENSIONS='stp'
+    CAD_FILE_EXTENSIONS=['stp','step','STEP','STP',"*"]
 
     def __init__(self,parent=None):
 
@@ -60,6 +76,8 @@ class Editor(CodeEditor,ComponentMixin):
                           language='Python',
                           filename='')
 
+        self.figviewer=None
+        self.fig=None
         self._actions =  \
                 {'File' : [QAction(icon('new'),
                                   'New',
@@ -67,15 +85,31 @@ class Editor(CodeEditor,ComponentMixin):
                                   shortcut='ctrl+N',
                                   triggered=self.new),
                           QAction(icon('open'),
-                                  'Open',
+                                  'Open Script',
                                   self,
                                   shortcut='ctrl+O',
                                   triggered=self.open),
-                          QAction(icon('open'),
+
+                          QAction(icon('import'),
                                   'Import',
                                   self,
                                   shortcut='ctrl+I',
                                   triggered=self.import_cad),
+
+                          QAction(icon('import'),
+                                  'Load G4 tracks',
+                                  self,
+                                  shortcut='ctrl+T',
+                                  triggered=self.import_tracks),
+
+
+
+                          QAction(icon('export'),
+                                  'Export',
+                                  self,
+                                  shortcut='ctrl+I',
+                                  triggered=self.export_gdml),
+
                         
                         
                           QAction(icon('save'),
@@ -198,6 +232,20 @@ class Editor(CodeEditor,ComponentMixin):
         fname = get_open_filename(self.CAD_FILE_EXTENSIONS, curr_dir)
         if fname != '':
             self.import_cad_to_scene(fname)
+    def import_tracks(self):
+        if not self.confirm_discard(): return
+        curr_dir = Path(self.filename).abspath().dirname()
+        #path = get_open_directory()
+        fname = get_open_filename('csv', curr_dir)
+        #if path is not None and os.path.isfile(path):
+        #    fname=os.path.join(path, 'tracks.csv')
+        #print(fname)
+        self.import_g4_tracks(fname)
+
+
+
+    def export_gdml(self, objects=None):
+        pass
 
     def to_shape(self,step_objects):
         results={}
@@ -205,25 +253,155 @@ class Editor(CodeEditor,ComponentMixin):
         
         for o in step_objects:
             c=o['RGB']
-            color=QColor.fromRgbF(c[0],c[1],c[2],0.2)
+            color=QColor.fromRgbF(c[0],c[1],c[2],0.1)
             #print(c)
             label=o['Name']
             if not label:
                 label=f'Unamed_{unamed_i}'
-            results[label]=SimpleNamespace(shape=o['CQ_OCP_TopDS'],options={'alpha':0.2})#,'color':color})
+            results[label]=SimpleNamespace(shape=o['CQ_OCP_TopDS'],options={'alpha':0.1, 'color':color})
         return results
+
+
+
     def import_cad_to_scene(self, fname):
         #passss
         #code=f'''result=cq.importers.importStep("{fname}")\nshow_object(result)'''
         #self.executeScript.emit(code)
         result=read_step(fname) 
-        
         objects_f=self.to_shape(result)
+        self.addObjectsToScene.emit(objects_f)
+
+    def set_figview_handle(self,fv):
+        self.figviewer=fv
+        fv.clear()
+        self.fig=fv.figure
+
+    def import_g4_tracks(self,fname):
+        """
+        render track.csv file
+        track.csv format:
+        ====
+        Event 0
+        Track parent_id charge
+        point_0 (x,y, z, edep)
+        point_1
+        ...
+
+        """
+        results={}
+        tracks=[]
+        ev=[]
+        color=(1,0,0)
+
+
+        track_profile=[]
+        
+        with open(fname) as fd:
+            for line in fd:
+                if 'Event' in line:
+                    continue
+                if 'Track' in line:
+                    if ev:
+                        tracks.append(
+                                {'points': ev,
+                                    'color':color,
+                                    }
+                                )
+                    color=get_track_color(line.split()[2]) #color in the row track
+                    ev=[]
+                    continue
+                cols=[float(x) for x in line.split()]
+                if len(cols) !=4:
+                    print('Length invalid', cols)
+
+                ev.append(cols)
+                track_profile.append(cols)
+
+            if ev:
+                tracks.append(
+                        {'points': ev,
+                                'color':color,
+                                }
+                        )
+        
+        track_profile=np.array(track_profile)
+        objects_f={}
+
+        for i, track in enumerate(tracks):
+            if i> self.preferences['Max Tracks']:
+                break
+            try:
+                c=track['color']
+                color=QColor.fromRgbF(c[0],c[1],c[2],0)
+                label=f'track_{i}'
+                pnts=np.array(track['points'])
+                #print("pont",pnts.shape)
+                pnts=pnts[:,:-1].tolist()
+                objects_f[label]=SimpleNamespace(shape=cq.Workplane("XY").polyline(pnts),
+                        options={'alpha':0, 'color':color})
+            except Exception as e:
+                print(e) 
 
         self.addObjectsToScene.emit(objects_f)
-        
-        
-        
+        ax1 = self.fig.add_subplot(1,1, 1)
+        x=track_profile[:,0]
+        y=track_profile[:,1]
+        z=track_profile[:,2]
+        w=track_profile[:,3]
+
+
+        x_range=[28,48]#get_range(x, margin=50)
+        y_range=[-5,5]#get_range(y, margin=4)
+        z_range=get_range(z, margin=4)
+        hxy=ax1.hist2d(x,y,range=[x_range, y_range], bins=100, weights=w )
+        ax1.set_xlabel('X (mm)')
+        ax1.set_ylabel('Y (mm)')
+        #clb=self.fig.colorbar(hxy, ax=ax1)
+        #print('plot data')
+        """
+        ax1 = self.fig.add_subplot(2,2, 1)
+        x=track_profile[:,0]
+        y=track_profile[:,1]
+        z=track_profile[:,2]
+        w=track_profile[:,3]
+
+        orgin=(-200, 0,1700)
+
+        #r=np.sqrt((x-orgin[0])**2 +(y-orgin[1])**2 +(z-orgin[2])**2)
+
+        x_range=get_range(x, margin=10)
+        y_range=get_range(y, margin=3)
+        z_range=get_range(z, margin=3)
+
+        hxy=ax1.hist2d(x,y,range=[ x_range, y_range], bins=50, weights=w )
+        ax1.set_xlabel('X (mm)')
+        ax1.set_ylabel('Y (mm)')
+        #clb=self.fig.colorbar(hxy, ax=ax1)
+
+        ax2 = self.fig.add_subplot(2,2, 2)
+        ax2.hist2d(y,z,range=[ y_range, z_range], bins=50, weights=w )
+        ax2.set_xlabel('Y (mm)')
+        ax2.set_ylabel('Z (mm)')
+        #clb=self.fig.colorbar(h2d_xy, ax=ax)
+        ax3 = self.fig.add_subplot(2,2, 3)
+        ax3.hist2d(x,z,range=[ x_range, z_range], bins=(100,100), weights=w )
+        ax3.set_xlabel('X (mm)')
+        ax3.set_ylabel('Z (mm)')
+
+        ax4 = self.fig.add_subplot(2,2, 4)
+
+        nbins=100
+        bins=np.linspace(-150,300,nbins)
+        edep=np.zeros(nbins)
+        for yi,wi in zip(x,w):
+            edep[np.argmax(bins>yi)]+=wi
+        ax4.plot(bins, edep)
+        ax4.set_xlabel('X (mm)')
+        ax4.set_ylabel('Energy (keV)')
+        ax4.set_yscale('log')
+        """
+        self.figviewer.refresh()
+        print('done')
 
 
 

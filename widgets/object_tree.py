@@ -10,7 +10,8 @@ from OCP.gp import gp_Dir, gp_Pnt, gp_Ax1
 from ..mixins import ComponentMixin
 from ..icons import icon
 from ..cq_utils import make_AIS, export, to_occ_color, is_obj_empty, get_occ_color
-from ..utils import splitter, layout, get_save_filename
+from ..utils import splitter, layout, get_save_filename, get_save_directory
+from ..gdml.exporter import export as export_gdml
 
 class TopTreeItem(QTreeWidgetItem):
 
@@ -26,6 +27,7 @@ class ObjectTreeItem(QTreeWidgetItem):
              {'name': 'Visible', 'type': 'bool','value': True},
              {'name': 'Material', 'type': 'str','value': 'Aluminum'},
              {'name': 'Tolerance', 'type': 'float', 'value': 1e-2, 'limits': (0,1e3), 'step': 1e-5},
+             {'name': 'Sensitive Volume', 'type': 'bool','value': False},
              ]
 
     def __init__(self,
@@ -53,9 +55,11 @@ class ObjectTreeItem(QTreeWidgetItem):
         self.properties['Name'] = name
         self.properties['Alpha'] = ais.Transparency()
         self.properties['Color'] = get_occ_color(ais) if ais else color
+
         self.properties.sigTreeStateChanged.connect(self.propertiesChanged)
 
     def propertiesChanged(self,*args):
+
 
         self.setData(0,0,self.properties['Name'])
         self.ais.SetTransparency(self.properties['Alpha'])
@@ -74,7 +78,7 @@ class CQRootItem(TopTreeItem):
 
     def __init__(self,*args,**kwargs):
 
-        super(CQRootItem,self).__init__(['Models'],*args,**kwargs)
+        super(CQRootItem,self).__init__(['World'],*args,**kwargs)
 
 
 class HelpersRootItem(TopTreeItem):
@@ -91,7 +95,7 @@ class ObjectTree(QWidget,ComponentMixin):
 
     preferences = Parameter.create(name='Preferences',children=[
         {'name': 'Preserve properties on reload', 'type': 'bool', 'value': False},
-        {'name': 'Clear all before each run', 'type': 'bool', 'value': True},
+        {'name': 'Clear all before each run', 'type': 'bool', 'value': False},
         {'name': 'STL precision','type': 'float', 'value': .1}])
 
     sigObjectsAdded = pyqtSignal([list],[list,bool])
@@ -151,10 +155,19 @@ class ObjectTree(QWidget,ComponentMixin):
                                              enabled=False,
                                              triggered=self.removeSelected)
 
-        self._hide_others_action = QAction('Hide others',
+        self._hide_others_action = QAction(icon('hide'),
+            'Hide others',
                                              self,
                                              enabled=False,
                                              triggered=self.hideOthers)
+        self._export_gdml= QAction(icon('export'),
+            'Export as gdml',
+                                             self,
+                                             enabled=False,
+                                             triggered=self.exportGdml)
+
+
+
 
         self._toolbar_actions = \
             [QAction(icon('delete-many'),'Clear all',self,triggered=self.removeObjects),
@@ -168,6 +181,7 @@ class ObjectTree(QWidget,ComponentMixin):
         tree.customContextMenuRequested.connect(self.showMenu)
 
         self.prepareLayout()
+
 
 
     def prepareMenu(self):
@@ -219,6 +233,7 @@ class ObjectTree(QWidget,ComponentMixin):
                                                  ais=line))
 
             ais_list.append(line)
+        
 
         self.sigObjectsAdded.emit(ais_list)
 
@@ -257,9 +272,11 @@ class ObjectTree(QWidget,ComponentMixin):
 
         #remove empty objects
         objects_f = {k:v for k,v in objects.items() if not is_obj_empty(v.shape)}
+        print('rending')
 
         for name,obj in objects_f.items():
             ais,shape_display = make_AIS(obj.shape,obj.options)
+            print(name)
             
             child = ObjectTreeItem(name,
                                    shape=obj.shape,
@@ -276,9 +293,12 @@ class ObjectTree(QWidget,ComponentMixin):
             root.addChild(child)
 
         if request_fit_view:
+            print('fit view')
             self.sigObjectsAdded[list,bool].emit(ais_list,True)
         else:
             self.sigObjectsAdded[list].emit(ais_list)
+        #print('save joblib')
+        ##joblib.dump(ais_list, '/home/xiaohl/test/radsys_test.joblib' )
 
     @pyqtSlot(object,str,object)
     def addObject(self,obj,name='',options={}):
@@ -340,12 +360,34 @@ class ObjectTree(QWidget,ComponentMixin):
 
 
 
+    def exportGdml(self,objects=None):
+        items = self.tree.selectedItems()
+        # if CQ models is selected get all children
+
+        shapes=[]
+
+        if [item for item in items if item is self.CQ]:
+            CQ = self.CQ
+            shapes = [{'shape': CQ.child(i).shape,
+                    'prop': CQ.child(i).properties}
+                    for i in range(CQ.childCount())]
+        # otherwise collect all selected children of CQ
+        else:
+            #shapes = [item.shape for item in items if item.parent() is self.CQ]
+
+            shapes = [{'shape': item.shape,
+                    'prop': item.properties} for item in items if item.parent() is self.CQ]
+
+        save_path= get_save_directory()
+        if save_path!= '':
+            print(f'exporting {len(shapes)} to  {save_path}')
+            export_gdml(shapes, save_path)
+
 
 
     def export(self,export_type,precision=None):
 
         items = self.tree.selectedItems()
-
         # if CQ models is selected get all children
         if [item for item in items if item is self.CQ]:
             CQ = self.CQ
@@ -353,10 +395,10 @@ class ObjectTree(QWidget,ComponentMixin):
         # otherwise collect all selected children of CQ
         else:
             shapes = [item.shape for item in items if item.parent() is self.CQ]
-
         fname = get_save_filename(export_type)
         if fname != '':
              export(shapes,export_type,fname,precision)
+
 
     @pyqtSlot()
     def handleSelection(self):
@@ -407,7 +449,6 @@ class ObjectTree(QWidget,ComponentMixin):
 
     @pyqtSlot(QTreeWidgetItem,int)
     def handleChecked(self,item,col):
-
         if type(item) is ObjectTreeItem:
             if item.checkState(0):
                 item.properties['Visible'] = True
