@@ -15,6 +15,7 @@ conda activate base
 
 create a file radsys:
 
+```sh
  
   3 # -*- coding: utf-8 -*-
   4 import re
@@ -25,7 +26,7 @@ create a file radsys:
   9 if __name__ == '__main__':
  10     sys.argv[0] = re.sub(r'(-script\.pyw?|\.exe)?$', '', sys.argv[0])
  11     sys.exit(main())[readonly] 11 lines, 226 bytes
-
+```sh
 
 # ToDo list:
 
