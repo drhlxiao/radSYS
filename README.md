@@ -15,18 +15,17 @@ conda activate base
 
 create a file radsys:
 
-```sh
+```python
  
-  3 # -*- coding: utf-8 -*-
-  4 import re
-  5 import sys
-  6 
-  7 from cq_editor.__main__ import main
-  8 
-  9 if __name__ == '__main__':
- 10     sys.argv[0] = re.sub(r'(-script\.pyw?|\.exe)?$', '', sys.argv[0])
- 11     sys.exit(main())[readonly] 11 lines, 226 bytes
-```sh
+
+import re
+import sys
+
+from cq_editor.__main__ import main
+if __name__ == '__main__':
+ sys.argv[0] = re.sub(r'(-script\.pyw?|\.exe)?$', '', sys.argv[0])
+sys.exit(main())[readonly] 11 lines, 226 bytes
+```
 
 # ToDo list:
 
