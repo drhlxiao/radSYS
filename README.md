@@ -25,30 +25,13 @@ RadSYS is a software suite for 3d radiation shielding optimization and radiation
 # Installation
 
 
-Install cq-editor using conda
-
-
+* Install cq-editor using conda
 activate conda
-
 conda activate base
+* copy the source code to cq-editor
 
-create a file radsys:
 
-```python
- 
-
-import re
-import sys
-
-from cq_editor.__main__ import main
-if __name__ == '__main__':
- sys.argv[0] = re.sub(r'(-script\.pyw?|\.exe)?$', '', sys.argv[0])
-sys.exit(main())[readonly] 11 lines, 226 bytes
-```
-
-# ToDo list:
-
--- replace the meshing code with the version written in c++
-
-how to run:
+# How to run:
+```sh
 /opt/conda/bin/radsy
+```
