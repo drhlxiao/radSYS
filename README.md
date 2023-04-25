@@ -1,9 +1,9 @@
-# RadiSYS
+# RadSYS
 RadiSYS is a software suite for 3d radiation shielding optimization and radiation effects analysis 
 ## Screenshot
 ![RadiSYS GUI](radsys.png?raw=true "RadiSYS")
 
-## RadiSys Features  
+## RadSys Features  
 
 * Graphical user interface
 * Import 3d geometry directly  from CAD files (step, iges, stl etc)
